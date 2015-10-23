@@ -1,39 +1,92 @@
-@compat function xlab!(v::VegaVisualization, title::String)
+@compat function xlab!(v::VegaVisualization; title::AbstractString = "", grid::Bool = false, ticks::Number = 0,
+                       format::AbstractString = "", layer::AbstractString = "front")
 	a = v.axes[findfirst([z.name == "x" for z in v.scales])]
 	a.title = title
+    a.grid = grid
+    a.ticks = ticks
+    a.format = format
+    a.layer = layer
 	return v
 end
 
-@compat function ylab!(v::VegaVisualization, title::String)
+@compat function ylab!(v::VegaVisualization; title::AbstractString = "", grid::Bool = false, ticks::Number = 0,
+                       format::AbstractString = "", layer::AbstractString = "front")
 	a = v.axes[findfirst([z.name == "y" for z in v.scales])]
 	a.title = title
+    a.grid = grid
+    a.ticks = ticks
+    a.format = format
+    a.layer = layer
 	return v
 end
 
-@compat function xlim!(v::VegaVisualization, min::Real, max::Real)
-	s = v.scales[findfirst([z.name == "x" for z in v.scales])]
-	s.domainMin = min
-	s.domainMax = max
+@compat function xlim!(v::VegaVisualization; min::Real = 0, max::Real = 1000, reverse::Bool = false, round::Bool = false)
+
+    if min > max
+        error("Min must be less than Max")
+    end
+
+    s = v.scales[findfirst([z.name == "x" for z in v.scales])]
+	s.domainMin = min == 0? s.domainMin : min
+	s.domainMax = max == 0? s.domainMax : max
+    s.reverse = reverse
+    s.round = round
+    min != 0? s.zero = false : s.zero = true
 	return v
 end
 
-@compat function ylim!(v::VegaVisualization, min::Real, max::Real)
-	s = v.scales[findfirst([z.name == "y" for z in v.scales])]
-	s.domainMin = min
-	s.domainMax = max
+@compat function ylim!(v::VegaVisualization; min::Real = 0, max::Real = 1000, reverse::Bool = false, round::Bool = false)
+
+    if min > max
+        error("Min must be less than Max")
+    end
+
+    s = v.scales[findfirst([z.name == "y" for z in v.scales])]
+	s.domainMin = min == 0? s.domainMin : min
+	s.domainMax = max == 1000? s.domainMax : max
+    s.reverse = reverse
+    s.round = round
+    min != 0? s.zero = false : s.zero = true
 	return v
 end
 
-@compat function title!(v::VegaVisualization, title::String)
+@compat function title!(v::VegaVisualization;
+                        title::AbstractString = "", y::Int = -40, fill::AbstractString = "black", fontSize::Int = 16,
+                        align::AbstractString = "center", baseline::AbstractString = "top", fontWeight::AbstractString = "bold",
+                        font::AbstractString = "", x::Int = 0)
 	titlemark = VegaMark(_type = "text", from = VegaMarkFrom(value = title))
-    enterprops = VegaMarkPropertySet(x = VegaValueRef(value = v.width / 2),
-                                     y = VegaValueRef(value = -50),
+    enterprops = VegaMarkPropertySet(x = VegaValueRef(value = (x == 0 ? (v.width / 2) : x)),
+                                     y = VegaValueRef(value = y),
                                      text = VegaValueRef(value = title),
-                                     fill = VegaValueRef(value = "black"),
-                                     fontSize = VegaValueRef(value = 12))
+                                     fill = VegaValueRef(value = fill),
+                                     fontSize = VegaValueRef(value = fontSize),
+                                     align = VegaValueRef(value = align),
+                                     baseline = VegaValueRef(value = baseline),
+                                     fontWeight = VegaValueRef(value = fontWeight),
+                                     font = VegaValueRef(value = font)
+                                     )
 	titlemark.properties = VegaMarkProperties(enter = enterprops)
 	push!(v.marks, titlemark)
 	return v
+end
+
+#Same function as title, just with different name and defaults for a different conceptual feel
+@compat function text!(v::VegaVisualization;
+                        title::AbstractString = "", y::Int = 50, fill::AbstractString = "black", fontSize::Int = 12,
+                        align::AbstractString = "center", baseline::AbstractString = "top", fontWeight::AbstractString = "",
+                        font::AbstractString = "", x::Int = 50)
+
+    title!(v,
+            title = title,
+            y = y,
+            fill = fill,
+            fontSize = fontSize,
+            align = align,
+            baseline = baseline,
+            fontWeight = fontWeight,
+            font = font,
+            x = x)
+
 end
 
 #Works for bar and grouped bar charts, add more cases if it makes sense
@@ -65,26 +118,40 @@ end
         v.marks[1].properties.enter.x2 = VegaValueRef(scale = "y", field = "layout_end")
     end
 
+    #Grouped bar hack
+    if v.name == "groupedbar"
+        v.marks[1].marks[1].properties.enter.height = v.marks[1].marks[1].properties.enter.width
+        v.marks[1].marks[1].properties.enter.width = nothing
+
+        v.marks[1].marks[1].properties.enter.x2 = v.marks[1].marks[1].properties.enter.y2
+        v.marks[1].marks[1].properties.enter.y2 = nothing
+
+        v.marks[1].marks[1].properties.enter.y, v.marks[1].marks[1].properties.enter.x = v.marks[1].marks[1].properties.enter.x, v.marks[1].marks[1].properties.enter.y
+
+        v.marks[1].properties.enter.width = nothing
+        v.marks[1].properties.enter.x = nothing
+        v.marks[1].properties.enter.x2 = nothing
+        v.marks[1].properties.enter.y = VegaValueRef(scale = "x", field = "key")
+        v.marks[1].scales[1].range = "height"
+    end
+
     return v
 end
 
-@compat function legend!(v::VegaVisualization, title::String = "")
-	v.legends[1].title = title
-	return v
-end
+@compat function legend!(v::VegaVisualization; title::AbstractString="Group", show::Bool=true)
 
-@compat function showlegend!(v::VegaVisualization)
-	default_legend!(v)
-	return v
-end
+    if show == true
+        default_legend!(v)
+        v.legends[1].title = title
+    else
+        empty!(v.legends)
+    end
 
-@compat function hidelegend!(v)
-	empty!(v.legends)
-	return v
+    return v
 end
 
 #Use ColorBrewer.jl scales
-@compat function colorscheme!(v::VegaVisualization, palette::Union(Tuple{AbstractString,Int64}, AbstractString, Array))
+@compat function colorscheme!(v::VegaVisualization; palette::Union{Tuple{AbstractString,Int64}, AbstractString, Array} = "ordinal10")
 
     #See if group or color key exists
     i = findfirst([z.name == "group" for z in v.scales])
@@ -106,9 +173,9 @@ end
 
 end
 
-@compat function stroke!(v::VegaVisualization; color::String = "Black", width::Real = 0.75, opacity::Real = 1, visible::Bool = true)
+@compat function stroke!(v::VegaVisualization; color::AbstractString = "Black", width::Real = 0.75, opacity::Real = 1, visible::Bool = true)
 
-    if typeof(v.marks[1].marks) in (Nothing, Void)
+    if typeof(v.marks[1].marks) == Void
         if visible
             v.marks[1].properties.enter.stroke = VegaValueRef(value = color)
             v.marks[1].properties.enter.strokeWidth = VegaValueRef(value = width)
@@ -130,6 +197,41 @@ end
             v.marks[1].marks[1].properties.enter.strokeOpacity = nothing
         end
     end
+
+    return v
+end
+
+
+@compat function hline!(v::VegaVisualization; value::Real = 0, strokeWidth::Real = 1.5, stroke::AbstractString = "#000", strokeDash::Real = 0)
+    line = VegaMark(_type = "rule",
+                    properties = VegaMarkProperties(enter = VegaMarkPropertySet(x = VegaValueRef(field = Dict{Any, Any}("group" => "x")),
+                                                                                x2 = VegaValueRef(field = Dict{Any, Any}("group" => "width")),
+                                                                                y = VegaValueRef(scale = "y", value = value),
+                                                                                strokeWidth = VegaValueRef(value = strokeWidth),
+                                                                                stroke = VegaValueRef(value = stroke),
+                                                                                strokeDash = VegaValueRef(value = strokeDash != 0? [strokeDash] : [])
+                                                                                )
+                                )
+                    )
+
+    push!(v.marks, line)
+
+    return v
+end
+
+@compat function vline!(v::VegaVisualization; value::Real = 0, strokeWidth::Real = 1.5, stroke::AbstractString = "#000", strokeDash::Real = 0)
+    line = VegaMark(_type = "rule",
+                    properties = VegaMarkProperties(enter = VegaMarkPropertySet(y = VegaValueRef(field = Dict{Any, Any}("group" => "y")),
+                                                                                y2 = VegaValueRef(field = Dict{Any, Any}("group" => "height")),
+                                                                                x = VegaValueRef(scale = "x", value = value),
+                                                                                strokeWidth = VegaValueRef(value = strokeWidth),
+                                                                                stroke = VegaValueRef(value = stroke),
+                                                                                strokeDash = VegaValueRef(value = strokeDash != 0? [strokeDash] : [])
+                                                                                )
+                                )
+                    )
+
+    push!(v.marks, line)
 
     return v
 end

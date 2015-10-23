@@ -13,13 +13,14 @@ module Vega
     export tojson, tojs
 
     export barplot, choropleth, lineplot, scatterplot, areaplot, heatmap, piechart,
-           histogram, popchart, waterfall, wordcloud, groupedbar, rugplot
+           histogram, popchart, waterfall, wordcloud, groupedbar, rugplot, boxplot,
+           bubblechart, streamplot
 
-    export xlab!, ylab!, xlim!, ylim!, title!, legend!
+    export xlab!, ylab!, xlim!, ylim!, title!, legend!, text!
 
     export default_scales!, default_axes!, default_legend!
     export add_data!, add_points!, add_area!, add_rects!, add_lines!
-    export showlegend!, hidelegend!, colorscheme!, coord_flip!, stroke!
+    export colorscheme!, coord_flip!, stroke!, hline!, vline!
 
     #Import helper code
     include("jstypes.jl")
@@ -56,6 +57,8 @@ module Vega
     # Higher-level API
     include("derived/choropleth.jl")
     include("derived/barplot.jl")
+    include("derived/bubblechart.jl")
+    include("derived/boxplot.jl")
     include("derived/groupedbar.jl")
     include("derived/lineplot.jl")
     include("derived/scatterplot.jl")
@@ -65,8 +68,13 @@ module Vega
     include("derived/histogram.jl")
     include("derived/popchart.jl")
     include("derived/rugplot.jl")
+    include("derived/streamplot.jl")
     include("derived/waterfall.jl")
     include("derived/wordcloud.jl")
+
+    if Pkg.installed("Escher") != nothing
+        include("escher_integration.jl")
+    end
 
 
 

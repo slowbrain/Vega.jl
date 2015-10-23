@@ -1,12 +1,15 @@
 # Open a URL in a browser
-function openurl(url::String)
+function openurl(url::AbstractString)
     @osx_only     run(`open $url`)
     @windows_only run(`cmd /c start $url`)
     @linux_only   run(`xdg-open $url`)
 end
 
-#Only part of displaying that doesn't work
+#Jupyter Notebook display
 import Base.writemime
+
+asset(url...) = readall(Pkg.dir("Vega", "assets", "bower_components", url...))
+
 function writemime(io::IO, ::MIME"text/html", v::VegaVisualization)
 
         spec = JSON.json(tojs(v))
@@ -31,7 +34,6 @@ function writemime(io::IO, ::MIME"text/html", v::VegaVisualization)
 
                     require(["d3"], function(d3){
 
-                        console.log('Loading from require.js...')
                         window.d3 = d3;
 
                         require(["topojson"], function(topojson){
@@ -45,6 +47,12 @@ function writemime(io::IO, ::MIME"text/html", v::VegaVisualization)
                               require(["vega"], function(vg) {
 
                               vg.parse.spec($spec, function(chart) { chart({el:\"#$divid\"}).update(); });
+
+                              window.setTimeout(function() {
+                                var pnglink = document.getElementById(\"$divid\").getElementsByTagName(\"canvas\")[0].toDataURL(\"image/png\")
+                                document.getElementById(\"$divid\").insertAdjacentHTML('beforeend', '<br><a href=\"' + pnglink + '\" download>Save as PNG</a>')
+
+                              }, 20);
 
                           }); //vega require end
 
@@ -64,27 +72,44 @@ end
 #Only Julia code is tojson(v), converting from ::VegaVisualization to JSON
 function writehtml(io::IO, v::VegaVisualization; title="Vega.jl Visualization")
 
+    d3 = asset("d3","d3.min.js")
+    topojson = asset("topojson","topojson.js")
+    cloudlayout = asset("d3-cloud", "build", "d3.layout.cloud.js")
+    vega = asset("vega", "vega.js")
+
+    divid = "vg" * randstring(3)
+
     println(io,
     "
     <html>
       <head>
         <title>$title</title>
-        <script src=\"https://vega.github.io/vega-editor/vendor/d3.min.js\" charset=\"utf-8\"></script>
-        <script src=\"https://vega.github.io/vega-editor/vendor/topojson.js\" charset=\"utf-8\"></script>
-        <script src=\"https://vega.github.io/vega-editor/vendor/d3.layout.cloud.js\" charset=\"utf-8\"></script>
-        <script src=\"https://vega.github.io/vega/vega.min.js\" charset=\"utf-8\"></script>
+        <script>$d3</script>
+        <script>$topojson</script>
+        <script>$cloudlayout</script>
+        <script>$vega</script>
 
       </head>
       <body>
-        <div id=\"vis\"></div>
+        <div id=\"$divid\"></div>
       </body>
+
     <script type=\"text/javascript\">
     // parse a spec and create a visualization view
     function parse(spec) {
-      vg.parse.spec(spec, function(chart) { chart({el:\"#vis\"}).update(); });
+      vg.parse.spec(spec, function(chart) { chart({el:\"#$divid\"}).update(); });
     }
     parse($(tojson(v)));
+
+    window.setTimeout(function() {
+      var pnglink = document.getElementById(\"$divid\").getElementsByTagName(\"canvas\")[0].toDataURL(\"image/png\")
+      document.getElementById(\"$divid\").insertAdjacentHTML('beforeend', '<br><a href=\"' + pnglink + '\" download>Save as PNG</a>')
+
+    }, 20);
+
     </script>
+
+
     </html>
     ")
 

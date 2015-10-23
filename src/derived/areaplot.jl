@@ -1,12 +1,14 @@
 @compat function areaplot(;x::AbstractVector = Int[],
                    y::AbstractVector = Int[],
                    group::AbstractVector = Int[],
-                   stacked::Bool = false)
+                   stacked::Bool = false,
+                   normalize::Bool = false)
+
 
     if stacked
     	v = barplot(x = x, y = y, group = group, stacked = true)
 	    v.scales[1].points = true
-		v.scales[1]._type = nothing
+		  v.scales[1]._type = nothing
 
         innermark = VegaMark(_type="area", properties=VegaMarkProperties(enter = default_props()))
         innermark.properties.enter.y = VegaValueRef(scale = "y", field = "layout_start")
@@ -16,10 +18,16 @@
 
         mark = VegaMark(_type = "group",
                         from = VegaMarkFrom(data="table",
-                                            transform=[VegaTransform(Dict{Any,Any}("type"=>"stack", "groupby" => ["x"], "sortby" => ["group"], "field" => "y")),
+                                            transform=[VegaTransform(Dict{Any,Any}("type"=>"stack", "groupby" => ["x"], "sortby" => ["group"], "field" => "y", "offset" => normalize == true? "normalize" : "zero")),
                                                        VegaTransform(Dict{Any,Any}("type"=>"facet", "groupby" => ["group"]))]),
                         marks = [innermark])
+
         v.marks = [mark]
+
+      if normalize
+        ylim!(v, min = 0, max = 1)
+      end
+
 	else
         v = barplot(x = x, y = y, group = group)
 
@@ -30,5 +38,7 @@
         v.scales[1].zero = false
     end
 
+    #Default to Paired color scale, 12
+    colorscheme!(v; palette = ("Paired", 12))
     return v
 end
