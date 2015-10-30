@@ -31,13 +31,14 @@ Functions/Types:
 - Fill in `::VegaTransform` type with actual fields
 - How to layer plots?
 - error bars/shading around lines, regression line [#53](https://github.com/johnmyleswhite/Vega.jl/issues/53)
-- How to incorporate interactive features of Vega? `tooltip` function seems useful
+- How to incorporate more interactivity to `hover!` [#70](https://github.com/johnmyleswhite/Vega.jl/issues/70)
 - Create a "cheater" d3 type to use charts from [http://bl.ocks.org/mbostock](http://bl.ocks.org/mbostock) and [https://github.com/mbostock/d3/wiki/Gallery](https://github.com/mbostock/d3/wiki/Gallery) as templates?
 
 Vega Visualizations:
-- Stem and Leaf [#65](https://github.com/johnmyleswhite/Vega.jl/issues/65)
 - Bullet Chart [#47](https://github.com/johnmyleswhite/Vega.jl/issues/47)
 - Dotplot/Error [#49](https://github.com/johnmyleswhite/Vega.jl/issues/49)
+- Horizon [#69](https://github.com/johnmyleswhite/Vega.jl/issues/69)
+- Contour
 - Weather
 - parallel coordinates
 - Treemap
@@ -58,15 +59,15 @@ Vega Visualizations:
 
 d3 Visualizations (?):
 
-- Add chord chart from d3.js
+- Add chord chart from d3.js (requested at vega/vega project)
+- Hexbinning (requested at vega/vega project)
 - Sankey from d3.js
 - Calendar View Chart from d3.js
 
 Maps:
 
-- US State
 - State-level
-- Country-level (by pull request from someone else!)
+- Country-level
 
 Value unclear (but still possible):
 
